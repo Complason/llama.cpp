@@ -1,4 +1,4 @@
-name: Build Win7 Fully Static llama-server
+name: Build Win7 Fully Static llama-server (No DLLs)
 
 on:
   push:
@@ -21,29 +21,22 @@ jobs:
           install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake base-devel
           arch: x86_64
 
-      - name: Build with CMake (Fully Static, Win7 Compatible)
+      - name: Build with CMake (Fully Static, No DLL Dependencies)
         run: |
           mkdir build
           cd build
 
-          # 配置 CMake：静态链接 + Win7 兼容
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLAMA_BUILD_SERVER=ON \
             -DLLAMA_CURL=OFF \
             -G "MinGW Makefiles" \
-            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
+            # 强制静态链接所有关键库
+            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++ -static-libgomp" \
             -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000 -D__STDC_CONSTANT_MACROS" \
-            -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000 -D__STDC_CONSTANT_MACROS -static-libgcc -static-libstdc++"
+            -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000 -D__STDC_CONSTANT_MACROS -static-libgcc -static-libstdc++ -static-libgomp"
 
-          # 编译
           cmake --build . --config Release
-        shell: bash
-
-      - name: Debug - List Output Files
-        run: |
-          echo "🔍 Finding .exe files..."
-          find . -type f -name "*.exe" -exec echo "Found: $(cygpath -w {})" \;
         shell: bash
 
       - name: Verify Build Success
@@ -61,6 +54,6 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: llama-server-win7-static
+          name: llama-server-win7-static-no-dll
           path: ${{ env.LLAMA_SERVER_PATH }}
           if-no-files-found: error
