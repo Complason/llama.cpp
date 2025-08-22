@@ -30,6 +30,7 @@ jobs:
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLAMA_SERVER=ON \
+            -DLLAMA_CURL=OFF \  
             -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000" \
             -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000" \
             -G "MinGW Makefiles"
