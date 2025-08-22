@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Build on Windows
-    runs-on: windows-latest  # 实际是 Win10/11，但可交叉编译为 Win7 兼容
+    runs-on: windows-latest
 
     steps:
       - name: Checkout Source Code
@@ -31,7 +31,7 @@ jobs:
           export CPPFLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000"
           export CXXFLAGS="$CPPFLAGS"
 
-          # 编译 llama-server（单文件构建）
+          # 编译 llama-server
           make clean
           make LLAMA_SERVER=1 -j$(nproc)
 
@@ -40,7 +40,7 @@ jobs:
           if exist llama-server.exe (echo "✅ Build succeeded!") else (echo "❌ Build failed!" & exit 1)
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # ✅ 已升级到 v4
         with:
           name: llama-server-win7-compatible
           path: llama-server.exe
