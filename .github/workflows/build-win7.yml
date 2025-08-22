@@ -1,37 +1,48 @@
-name: Build Win7 Compatible llama-server
+name: Build Minimal & Portable llama-server (Static, Win7 Compatible)
 
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build on Windows
+    name: Build Minimal Static Server
     runs-on: windows-latest
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Setup MSYS2 with MinGW-w64 and CMake
+      - name: Setup MSYS2 (MinGW-w64 + CMake)
         uses: msys2/setup-msys2@v2
         with:
           update: true
           install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake base-devel
 
-      - name: Build with CMake (MinGW, Win7 Compatible)
+      - name: Build Minimal Static llama-server
         run: |
-          # 创建构建目录
           mkdir build
           cd build
 
-          # 配置 CMake：使用 MinGW，禁用 CURL，启用 Server，设置 Win7 兼容
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
+            # ✅ 只构建 server
             -DLLAMA_BUILD_SERVER=ON \
-            -DLLAMA_CURL=OFF \
+            # ❌ 禁用其他不必要的工具
+            -DLLAMA_BUILD_EXAMPLES=OFF \
+            -DLLAMA_BUILD_TESTS=OFF \
+            -DLLAMA_BUILD_BENCHMARKS=OFF \
+            -DLLAMA_BUILD_JUST_MAIN_LIB=OFF \
+            # 📦 依赖控制
+            -DLLAMA_CURL=OFF \              # 禁用网络下载（不需要）
+            -DLLAMA_OPENMP=ON \             # 启用多线程（推荐）
+            -DLLAMA_SUPPORTS_EXTERNAL_SYMS=OFF \
+            # 🔗 静态链接：不依赖 MSVCR*.dll
+            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
+            # 🎯 构建系统
             -G "MinGW Makefiles" \
+            # 🖥️ Win7 兼容性
             -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000" \
             -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000"
 
@@ -39,18 +50,25 @@ jobs:
           cmake --build . --config Release
         shell: bash
 
-      - name: Verify Build Success
+      - name: Verify llama-server.exe Built
         run: |
-          if exist build\bin\llama-server.exe (
-            echo "✅ Build succeeded! EXE found."
-          ) else (
-            echo "❌ Build failed! llama-server.exe not found."
+          if [ -f "build/bin/llama-server.exe" ]; then
+            echo "✅ SUCCESS: llama-server.exe built!"
+            ls -la build/bin/llama-server.exe
+            # 检查是否静态链接
+            file build/bin/llama-server.exe
+            # 可选：检查是否有 DLL 依赖（需要 objdump）
+            # i686-w64-mingw32-objdump -p build/bin/llama-server.exe | grep "DLL Name"
+          else
+            echo "❌ FAILED: llama-server.exe not found!"
+            ls -la build/bin/
             exit 1
-          )
+          fi
+        shell: bash
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: llama-server-win7-compatible
+          name: llama-server-portable-win7
           path: build/bin/llama-server.exe
           if-no-files-found: error
