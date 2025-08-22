@@ -20,13 +20,16 @@ jobs:
           update: true
           install: base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-make
 
-      - name: Build with Win7 Compatibility (MinGW64)
+      - name: Build with Win7 Compatibility (using bash + MinGW64)
         run: |
+          # 进入 MSYS2 MinGW64 环境
+          export PATH="/c/msys64/mingw64/bin:$PATH"
           export CPPFLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000"
           export CXXFLAGS="$CPPFLAGS"
-          mingw64-make clean
-          mingw64-make LLAMA_SERVER=1 -j$(nproc)
-        shell: msys2
+          echo "Building llama-server..."
+          make clean
+          make LLAMA_SERVER=1 -j$(nproc)
+        shell: bash
 
       - name: Check if EXE was created
         run: |
