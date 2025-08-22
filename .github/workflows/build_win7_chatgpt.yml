@@ -1,4 +1,4 @@
-name: win7-llama-server
+name: win7-llama-server-mingw
 
 on:
   workflow_dispatch:
@@ -32,7 +32,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DLLAMA_BUILD_SERVER=ON \
             -DLLAMA_CURL=OFF \
-            -DGGML_CUDA=OFF -DGGML_VULKAN=OFF
+            -DGGML_CUDA=OFF \
+            -DGGML_VULKAN=OFF
 
           cmake --build . --config Release --target llama-server -- -j4
           strip bin/llama-server.exe
@@ -40,5 +41,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: llama-server-win7-static
+          name: llama-server-win7-mingw-static
           path: build/bin/llama-server.exe
