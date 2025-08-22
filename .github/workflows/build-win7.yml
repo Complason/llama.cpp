@@ -1,4 +1,4 @@
-name: Build Win7 Fully Static llama-server (No OpenMP)
+name: Build Win7 Fully Static llama-server (No DLLs)
 
 on:
   push:
@@ -26,11 +26,12 @@ jobs:
           mkdir build
           cd build
 
+          # ✅ 关键：所有参数在一行逻辑内，用 \ 续行，且不能有空格错位
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLAMA_BUILD_SERVER=ON \
             -DLLAMA_CURL=OFF \
-            -DLLAMA_USE_OPENMP=OFF \            # 👈 关键：禁用 OpenMP
+            -DGGML_OPENMP=OFF \
             -G "MinGW Makefiles" \
             -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
             -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000 -D__STDC_CONSTANT_MACROS" \
