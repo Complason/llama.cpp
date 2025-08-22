@@ -14,33 +14,26 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Setup MSYS2 with MinGW-w64
+      - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
           update: true
-          install: >
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-make
+          install: base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-make
 
-      - name: Build with Win7 Compatibility Flags
-        shell: msys2-mingw64
+      - name: Build with Win7 Compatibility (MinGW64)
         run: |
-          # 设置兼容 Windows 7 的宏
           export CPPFLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000"
           export CXXFLAGS="$CPPFLAGS"
-
-          # 编译 llama-server
-          make clean
-          make LLAMA_SERVER=1 -j$(nproc)
+          mingw64-make clean
+          mingw64-make LLAMA_SERVER=1 -j$(nproc)
+        shell: msys2
 
       - name: Check if EXE was created
         run: |
           if exist llama-server.exe (echo "✅ Build succeeded!") else (echo "❌ Build failed!" & exit 1)
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4  # ✅ 已升级到 v4
+        uses: actions/upload-artifact@v4
         with:
           name: llama-server-win7-compatible
           path: llama-server.exe
