@@ -1,9 +1,9 @@
-name: Build Win7 Compatible llama-server
+name: Build Win7 Compatible llama-server (CMake)
 
 on:
+  workflow_dispatch:  # 手动触发，避免频繁构建
   push:
     branches: [ main, master ]
-  workflow_dispatch:  # 允许手动触发
 
 jobs:
   build:
@@ -18,26 +18,33 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           update: true
-          install: base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-make
+          install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake base-devel
 
-      - name: Build with Win7 Compatibility (using bash + MinGW64)
+      - name: Build with CMake (Win7 Compatible)
         run: |
-          # 进入 MSYS2 MinGW64 环境
-          export PATH="/c/msys64/mingw64/bin:$PATH"
-          export CPPFLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000"
-          export CXXFLAGS="$CPPFLAGS"
-          echo "Building llama-server..."
-          make clean
-          make LLAMA_SERVER=1 -j$(nproc)
+          # 创建构建目录
+          mkdir build
+          cd build
+
+          # 设置 Win7 兼容宏并配置 CMake
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLLAMA_SERVER=ON \
+            -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000" \
+            -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000" \
+            -G "MinGW Makefiles"
+
+          # 开始编译
+          cmake --build . --config Release
         shell: bash
 
       - name: Check if EXE was created
         run: |
-          if exist llama-server.exe (echo "✅ Build succeeded!") else (echo "❌ Build failed!" & exit 1)
+          if exist build\llama-server.exe (echo "✅ Build succeeded!") else (echo "❌ Build failed!" & exit 1)
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: llama-server-win7-compatible
-          path: llama-server.exe
+          path: build/llama-server.exe
           if-no-files-found: error
