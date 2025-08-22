@@ -1,13 +1,13 @@
-name: Build Win7 Compatible llama-server
+name: Build Win7 Fully Static llama-server
 
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build on Windows
+    name: Build Static EXE for Win7
     runs-on: windows-latest
 
     steps:
@@ -19,48 +19,48 @@ jobs:
         with:
           update: true
           install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake base-devel
+          arch: x86_64
 
-      - name: Build with CMake (MinGW, Win7 Compatible)
+      - name: Build with CMake (Fully Static, Win7 Compatible)
         run: |
           mkdir build
           cd build
 
+          # 配置 CMake：静态链接 + Win7 兼容
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLAMA_BUILD_SERVER=ON \
             -DLLAMA_CURL=OFF \
             -G "MinGW Makefiles" \
-            -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000" \
-            -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000"
+            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
+            -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000 -D__STDC_CONSTANT_MACROS" \
+            -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000 -D__STDC_CONSTANT_MACROS -static-libgcc -static-libstdc++"
 
+          # 编译
           cmake --build . --config Release
         shell: bash
 
-      # 👉 新增：调试 - 查看构建输出结构
-      - name: Debug - List Build Directory
+      - name: Debug - List Output Files
         run: |
-          echo "🔍 Listing all files in build/ directory:"
-          find build -type f -name "*.exe" | sed 's|/|\\|g'
+          echo "🔍 Finding .exe files..."
+          find . -type f -name "*.exe" -exec echo "Found: $(cygpath -w {})" \;
         shell: bash
 
-      # ✅ 修改：使用 bash 风格判断文件是否存在，支持跨子目录查找
       - name: Verify Build Success
         run: |
-          EXE_PATH=$(find build -type f -name "llama-server.exe" | head -n1)
-          if [ -n "$EXE_PATH" ]; then
-            echo "✅ Build succeeded! Found llama-server.exe at: $EXE_PATH"
-            echo "LLAMA_SERVER_PATH=$EXE_PATH" >> $GITHUB_ENV
+          EXE_PATH=$(find . -type f -name "llama-server.exe" | head -n1)
+          if [ -f "$EXE_PATH" ]; then
+            echo "✅ Build succeeded! Found: $EXE_PATH"
+            echo "LLAMA_SERVER_PATH=$(cygpath -w "$EXE_PATH")" >> $GITHUB_ENV
           else
-            echo "❌ Build failed! llama-server.exe not found in build/ directory."
-            echo "Check the build logs to confirm the server was built."
+            echo "❌ Failed to build llama-server.exe"
             exit 1
           fi
         shell: bash
 
-      # ✅ 使用环境变量上传
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: llama-server-win7-compatible
+          name: llama-server-win7-static
           path: ${{ env.LLAMA_SERVER_PATH }}
           if-no-files-found: error
