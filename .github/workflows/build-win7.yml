@@ -1,4 +1,4 @@
-name: Build Win7 Fully Static llama-server (No DLLs)
+name: Build Win7 Fully Static llama-server
 
 on:
   push:
@@ -31,11 +31,10 @@ jobs:
             -DLLAMA_BUILD_SERVER=ON \
             -DLLAMA_CURL=OFF \
             -G "MinGW Makefiles" \
-            # 强制静态链接所有关键库
             -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++ -static-libgomp" \
             -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000 -D__STDC_CONSTANT_MACROS" \
-            -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000 -D__STDC_CONSTANT_MACROS -static-libgcc -static-libstdc++ -static-libgomp"
-
+            -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 -DNTDDI_VERSION=0x06010000 -D__STDC_CONSTANT_MACROS -static-libgcc -static-libstdc++ -static-libgomp" \
+            && \
           cmake --build . --config Release
         shell: bash
 
